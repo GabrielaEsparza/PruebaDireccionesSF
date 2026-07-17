@@ -121,30 +121,45 @@ public class DireccionService {
             return new ValidarDireccionResponseDTO(false, "El código postal no corresponde al estado seleccionado");
         }
 
-        if (!codigoPostal.getMunicipio().equals(request.getMunicipio())) {
+        // El catalogo de CP puede no traer municipio/localidad para ciertos CP.
+        // En ese caso no hay nada contra que comparar, el municipio/localidad ya
+        // se valido arriba contra el catalogo del estado, asi que
+        // se acepta. Cuando el catalogo si trae un valor, si debe coincidir
+        if (codigoPostal.getMunicipio() != null
+                && !codigoPostal.getMunicipio().equals(request.getMunicipio())) {
             return new ValidarDireccionResponseDTO(false, "El municipio no corresponde al código postal especificado");
         }
 
-        if (!codigoPostal.getLocalidad().equals(request.getLocalidad())) {
+        if (codigoPostal.getLocalidad() != null
+                && !codigoPostal.getLocalidad().equals(request.getLocalidad())) {
             return new ValidarDireccionResponseDTO(false, "La localidad no corresponde al código postal especificado");
         }
 
         ///////////////////Colonia pertenece al Código Postal
         List<Colonia> colonias = obtenerColoniasPorCp(request.getCp());
 
-        boolean coloniaValida = false;
-        for (Colonia colonia : colonias) {
-            if (colonia.getId().getClave().equals(request.getColonia())) {
-                coloniaValida = true;
-                break;
+        // Si el CP no tiene colonias catalogadas, la colonia se captura a mano
+        // en el frontend y no hay catálogo contra el cual validarla: solo se
+        // exige que no venga vacía.
+        if (colonias.isEmpty()) {
+            if (request.getColonia() == null || request.getColonia().isBlank()) {
+                return new ValidarDireccionResponseDTO(false, "La colonia es requerida");
+            }
+        } else {
+            boolean coloniaValida = false;
+            for (Colonia colonia : colonias) {
+                if (colonia.getId().getClave().equals(request.getColonia())) {
+                    coloniaValida = true;
+                    break;
+                }
+            }
+
+            if (!coloniaValida) {
+                return new ValidarDireccionResponseDTO(false, "La colonia no pertenece al código postal especificado");
             }
         }
 
-        if (!coloniaValida) {
-            return new ValidarDireccionResponseDTO(false, "La colonia no pertenece al código postal especificado");
-        }
-
-        // Si pasó todas las comprobaciones:
+        // Si paso todas las comprobaciones:
         return new ValidarDireccionResponseDTO(true, "La dirección es válida");
 
     }//validarDireccion

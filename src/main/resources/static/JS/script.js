@@ -71,15 +71,17 @@ document.getElementById('cp').addEventListener('blur', async function(){
         llenarSelect('municipio', munis, 'descripcion', 'Seleccione...');
         llenarSelect('localidad', locs, 'descripcion', 'Seleccione...');
 
-        document.getElementById('municipio').value = data.municipio;
-        document.getElementById('localidad').value = data.localidad;
+        document.getElementById('municipio').value = data.municipio || '';
+        document.getElementById('localidad').value = data.localidad || '';
 
-        // Estado, municipio y localidad ya quedaron determinados por el CP:
-        // se bloquean para que no se puedan cambiar a un valor inconsistente
-        // con ese CP. Si el usuario se equivocó de CP, debe corregir el CP
-        // (blur() vuelve a disparar esta rutina y repuebla todo desde cero).
-        document.getElementById('municipio').disabled = true;
-        document.getElementById('localidad').disabled = true;
+        // Estado siempre viene determinado por el CP, así que se bloquea.
+        // Municipio y localidad solo se bloquean si el CP realmente trae
+        // ese dato en el catálogo; si el catálogo no lo tiene (null), se
+        // dejan habilitados para que el usuario los elija manualmente.
+        // Si el usuario se equivocó de CP, debe corregir el CP (blur()
+        // vuelve a disparar esta rutina y repuebla todo desde cero).
+        document.getElementById('municipio').disabled = !!data.municipio;
+        document.getElementById('localidad').disabled = !!data.localidad;
 
         // Las colonias
         const colonias = data.colonias;
@@ -154,31 +156,27 @@ async function continuar() {
         return;
     }
 
-    // Si la colonia fue escrita a mano (el CP no tenía colonias en catálogo), no hay
-    // catálogo contra el cual validarla en backend, así que no se manda a /validar.
-    if (!coloniaEsManual) {
-        try {
-            const respuesta = await fetch(`${API}/validar`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cp, estado, municipio, localidad, colonia })
-            });
+    // Siempre se valida contra el backend, incluso cuando la colonia se
+    // captura a mano (CP sin colonias en catálogo): el backend sabe
+    // distinguir ese caso y validar lo demás (estado/municipio/localidad/CP).
+    try {
+        const respuesta = await fetch(`${API}/validar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cp, estado, municipio, localidad, colonia })
+        });
 
-            const resultado = await respuesta.json();
+        const resultado = await respuesta.json();
 
-            if (!resultado.valida) {
-                Swal.fire({ icon: 'error', title: 'Error', text: resultado.mensaje, timer: 3000, timerProgressBar: true });
-                return;
-            }
-
-            await Swal.fire({ icon: 'success', title: '¡Éxito!', text: resultado.mensaje, timer: 3000, timerProgressBar: true });
-            limpiarFormulario();
-
-        } catch(e) {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al validar la dirección.', timer: 3000, timerProgressBar: true });
+        if (!resultado.valida) {
+            Swal.fire({ icon: 'error', title: 'Error', text: resultado.mensaje, timer: 3000, timerProgressBar: true });
+            return;
         }
-    } else {
-        await Swal.fire({ icon: 'success', title: '¡Éxito!', text: 'Dirección válida. Los datos son correctos.', timer: 3000, timerProgressBar: true });
+
+        await Swal.fire({ icon: 'success', title: '¡Éxito!', text: resultado.mensaje, timer: 3000, timerProgressBar: true });
         limpiarFormulario();
+
+    } catch(e) {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al validar la dirección.', timer: 3000, timerProgressBar: true });
     }
 }
