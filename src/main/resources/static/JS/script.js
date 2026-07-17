@@ -51,6 +51,9 @@ document.getElementById('cp').addEventListener('blur', async function(){
         const respuesta = await fetch(`${API}/cp/${cp}`);
 
         if (!respuesta.ok) {
+            document.getElementById('estado').disabled = false;
+            document.getElementById('municipio').disabled = true;
+            document.getElementById('localidad').disabled = true;
             Swal.fire({ icon: 'error', title: 'CP no encontrado', text: `El código postal ${cp} no existe.`, timer: 3000, timerProgressBar: true });
             return;
         }
@@ -58,6 +61,7 @@ document.getElementById('cp').addEventListener('blur', async function(){
         const data = await respuesta.json();
 
         document.getElementById('estado').value = data.estado;
+        document.getElementById('estado').disabled = true;
 
         const [munis, locs] = await Promise.all([
             fetch(`${API}/estado/${data.estado}/municipios`).then(r => r.json()),
@@ -70,7 +74,14 @@ document.getElementById('cp').addEventListener('blur', async function(){
         document.getElementById('municipio').value = data.municipio;
         document.getElementById('localidad').value = data.localidad;
 
-        // Las colonias ya vienen incluidas en la respuesta de /cp/{cp}, no hace falta pedirlas aparte
+        // Estado, municipio y localidad ya quedaron determinados por el CP:
+        // se bloquean para que no se puedan cambiar a un valor inconsistente
+        // con ese CP. Si el usuario se equivocó de CP, debe corregir el CP
+        // (blur() vuelve a disparar esta rutina y repuebla todo desde cero).
+        document.getElementById('municipio').disabled = true;
+        document.getElementById('localidad').disabled = true;
+
+        // Las colonias
         const colonias = data.colonias;
 
         const selectColonia = document.getElementById('colonia');
@@ -105,6 +116,7 @@ document.getElementById('cp').addEventListener('keydown', function(e){
 function limpiarFormulario() {
     document.getElementById('cp').value = '';
     document.getElementById('estado').value = '';
+    document.getElementById('estado').disabled = false;
     document.getElementById('municipio').innerHTML = '<option value="">Seleccione el estado</option>';
     document.getElementById('municipio').disabled = true;
     document.getElementById('localidad').innerHTML = '<option value="">Seleccione el estado</option>';

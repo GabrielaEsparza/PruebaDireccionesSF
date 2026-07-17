@@ -86,10 +86,11 @@ public class DireccionService {
         return Optional.of(dto);
     }//obtenerDireccionPorCp
 
-    /////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////
+
     public ValidarDireccionResponseDTO validarDireccion(ValidarDireccionRequestDTO request) {
 
-        // 1. Municipio pertenece al Estado
+        ///////////Municipio pertenece al Estado
         MunicipioId municipioId = new MunicipioId();
         municipioId.setClave(request.getMunicipio());
         municipioId.setEstado(request.getEstado());
@@ -109,7 +110,7 @@ public class DireccionService {
             return new ValidarDireccionResponseDTO(false, "La localidad no pertenece al estado seleccionado");
         }
 
-        // 3. Código Postal existe y coincide con el Estado
+        ////////////////////Código Postal existe y coincide con el Estado
         Optional<CodigoPostal> cpEncontrado = obtenerCodigoPostal(request.getCp());
         if (cpEncontrado.isEmpty()) {
             return new ValidarDireccionResponseDTO(false, "El código postal no existe");
@@ -120,7 +121,15 @@ public class DireccionService {
             return new ValidarDireccionResponseDTO(false, "El código postal no corresponde al estado seleccionado");
         }
 
-        // 4. Colonia pertenece al Código Postal
+        if (!codigoPostal.getMunicipio().equals(request.getMunicipio())) {
+            return new ValidarDireccionResponseDTO(false, "El municipio no corresponde al código postal especificado");
+        }
+
+        if (!codigoPostal.getLocalidad().equals(request.getLocalidad())) {
+            return new ValidarDireccionResponseDTO(false, "La localidad no corresponde al código postal especificado");
+        }
+
+        ///////////////////Colonia pertenece al Código Postal
         List<Colonia> colonias = obtenerColoniasPorCp(request.getCp());
 
         boolean coloniaValida = false;

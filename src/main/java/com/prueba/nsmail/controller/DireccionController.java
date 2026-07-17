@@ -24,25 +24,25 @@ public class DireccionController {
         this.direccionService = direccionService;
     }//Constructor
 
-    // 1. Traer todos los estados
+    ////////Traer todos los estados
     @GetMapping("/estados")
     public List<Estado> obtenerEstados() {
         return direccionService.obtenerEstados();
     }//obtenerEstados
 
-    // 2. Traer municipios de un estado
+    //////Traer municipios de un estado
     @GetMapping("/estado/{estado}/municipios")
     public List<Municipio> obtenerMunicipios(@PathVariable String estado) {
         return direccionService.obtenerMunicipiosPorEstado(estado);
     }//obtenerMunicipios
 
-    // 2. Traer localidades de un estado
+    //////Traer localidades de un estado
     @GetMapping("/estado/{estado}/localidades")
     public List<Localidad> obtenerLocalidades(@PathVariable String estado) {
         return direccionService.obtenerLocalidadPorEstado(estado);
     }//obtenerLocalidades
 
-    // 3. Resolver un código postal (estado, municipio, localidad, colonias)
+    ////////Direccion en base a codigo postal (estado, municipio, localidad, colonias)
     @GetMapping("/cp/{cp}")
     public ResponseEntity<CodigoPostalResponseDTO> obtenerDireccionPorCp(@PathVariable String cp) {
         Optional<CodigoPostalResponseDTO> resultado = direccionService.obtenerDireccionPorCp(cp);
@@ -53,13 +53,13 @@ public class DireccionController {
         return ResponseEntity.ok(resultado.get());
     }//obtenerDireccionPorCp
 
-    // 3b. Colonias de un código postal (usado aparte por el frontend)
+    ////////////Colonias de un codigo postal 
     @GetMapping("/cp/{cp}/colonias")
     public List<Colonia> obtenerColonias(@PathVariable String cp) {
         return direccionService.obtenerColoniasPorCp(cp);
     }//obtenerColonias
 
-    // 4. Validar dirección completa
+    ///////////////Validar dirección completa
     @PostMapping("/validar")
     public ValidarDireccionResponseDTO validarDireccion(@RequestBody ValidarDireccionRequestDTO request) {
         return direccionService.validarDireccion(request);
