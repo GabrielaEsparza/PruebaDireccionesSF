@@ -1,4 +1,4 @@
-const API = 'http://localhost:8080/api'
+const API = 'http://localhost:8080/api/direccion'
 
 //cargar estados
 async function cargarEstados(){
@@ -15,13 +15,13 @@ async function cargarEstados(){
 }
 cargarEstados();
 
-//llenar select generico
-function llenarSelect(id, items, valorCampo, textoCampo, placeholder) {
+//llenar select generico (lee la clave desde item.id.clave, porque Municipio/Localidad/Colonia tienen llave compuesta)
+function llenarSelect(id, items, textoCampo, placeholder) {
     const sel = document.getElementById(id);
     sel.innerHTML = `<option value="">${placeholder}</option>`;
     items.forEach(item => {
         const opcion = document.createElement('option');
-        opcion.value = item[valorCampo];
+        opcion.value = item.id.clave;
         opcion.textContent = item[textoCampo];
         sel.appendChild(opcion);
     });
@@ -38,8 +38,8 @@ document.getElementById('estado').addEventListener('change', async function(){
         fetch(`${API}/estado/${clave}/localidades`).then(r => r.json())
     ]);
 
-    llenarSelect('municipio', munis, 'clave', 'descripcion', 'Seleccione...');
-    llenarSelect('localidad', locs, 'clave', 'descripcion', 'Seleccione...');
+    llenarSelect('municipio', munis, 'descripcion', 'Seleccione...');
+    llenarSelect('localidad', locs, 'descripcion', 'Seleccione...');
 });
 
 //cuando el CP pierde el foco
@@ -64,19 +64,20 @@ document.getElementById('cp').addEventListener('blur', async function(){
             fetch(`${API}/estado/${data.estado}/localidades`).then(r => r.json())
         ]);
 
-        llenarSelect('municipio', munis, 'clave', 'descripcion', 'Seleccione...');
-        llenarSelect('localidad', locs, 'clave', 'descripcion', 'Seleccione...');
+        llenarSelect('municipio', munis, 'descripcion', 'Seleccione...');
+        llenarSelect('localidad', locs, 'descripcion', 'Seleccione...');
 
         document.getElementById('municipio').value = data.municipio;
         document.getElementById('localidad').value = data.localidad;
 
-        const colonias = await fetch(`${API}/cp/${cp}/colonias`).then(r => r.json());
+        // Las colonias ya vienen incluidas en la respuesta de /cp/{cp}, no hace falta pedirlas aparte
+        const colonias = data.colonias;
 
         const selectColonia = document.getElementById('colonia');
         const inputColonia  = document.getElementById('colonia-manual');
 
-        if (colonias.length > 0) {
-            llenarSelect('colonia', colonias, 'clave', 'descripcion', 'Seleccione...');
+        if (colonias && colonias.length > 0) {
+            llenarSelect('colonia', colonias, 'descripcion', 'Seleccione...');
             selectColonia.style.display = '';
             selectColonia.required = true;
             inputColonia.style.display = 'none';
@@ -141,42 +142,31 @@ async function continuar() {
         return;
     }
 
-    try {
-        const respuesta = await fetch(`${API}/cp/${cp}`);
+    // Si la colonia fue escrita a mano (el CP no tenía colonias en catálogo), no hay
+    // catálogo contra el cual validarla en backend, así que no se manda a /validar.
+    if (!coloniaEsManual) {
+        try {
+            const respuesta = await fetch(`${API}/validar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cp, estado, municipio, localidad, colonia })
+            });
 
-        if (!respuesta.ok) {
-            Swal.fire({ icon: 'error', title: 'Error', text: `El CP ${cp} no existe en los catálogos.`, timer: 3000, timerProgressBar: true });
-            return;
-        }
+            const resultado = await respuesta.json();
 
-        const data = await respuesta.json();
-
-        if (data.estado !== estado) {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'El estado no corresponde al CP ingresado.', timer: 3000, timerProgressBar: true });
-            return;
-        }
-        if (data.municipio !== municipio) {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'El municipio no corresponde al CP ingresado.', timer: 3000, timerProgressBar: true });
-            return;
-        }
-        if (data.localidad !== localidad) {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'La localidad no corresponde al CP ingresado.', timer: 3000, timerProgressBar: true });
-            return;
-        }
-
-        if (!coloniaEsManual) {
-            const colonias = await fetch(`${API}/cp/${cp}/colonias`).then(r => r.json());
-            const coloniaValida = colonias.some(c => c.clave === colonia);
-            if (!coloniaValida) {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'La colonia no corresponde al CP ingresado.', timer: 3000, timerProgressBar: true });
+            if (!resultado.valida) {
+                Swal.fire({ icon: 'error', title: 'Error', text: resultado.mensaje, timer: 3000, timerProgressBar: true });
                 return;
             }
-        }
 
+            await Swal.fire({ icon: 'success', title: '¡Éxito!', text: resultado.mensaje, timer: 3000, timerProgressBar: true });
+            limpiarFormulario();
+
+        } catch(e) {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al validar la dirección.', timer: 3000, timerProgressBar: true });
+        }
+    } else {
         await Swal.fire({ icon: 'success', title: '¡Éxito!', text: 'Dirección válida. Los datos son correctos.', timer: 3000, timerProgressBar: true });
         limpiarFormulario();
-
-    } catch(e) {
-        Swal.fire({ icon: 'error', title: 'Error', text: 'Ocurrió un error al validar la dirección.', timer: 3000, timerProgressBar: true });
     }
 }

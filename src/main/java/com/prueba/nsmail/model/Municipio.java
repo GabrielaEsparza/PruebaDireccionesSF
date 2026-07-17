@@ -1,29 +1,34 @@
 package com.prueba.nsmail.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "municipio")
-public class Municipio{
+public class Municipio {
 
-    @Id
-    @Column(name = "clave")
-    private String clave;
-
-    @Column(name = "estado")
-    private String estado;
+    @EmbeddedId
+    private MunicipioId id;
 
     @Column(name = "descripcion")
     private String descripcion;
 
-    public String getClave(){return clave;}
-    public void setClave(String clave){this.clave = clave;}
+    public MunicipioId getId() {
+        return id;
+    }//getId
 
-    public String getEstado(){return estado;}
-    public void setEstado(String estado){this.estado = estado;}
+    public void setId(MunicipioId id) {
+       this.id = id;
+    }//SetId
 
-    public String getDescripcion(){return descripcion;}
-    public void setDescripcion(String descripcion){this.descripcion = descripcion;}
+    public String getDescripcion() {
+        return descripcion;
+    }//getDescripcion
 
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }//setDecripcion
+}//Municipio
 
-}

@@ -1,36 +1,14 @@
-package com.prueba.nsmail.model;
+package com.prueba.nsmail.dto;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+public class ValidarDireccionRequestDTO {
 
-@Entity
-@Table(name = "codigo_postal")
-public class CodigoPostal {
-
-    @Id
-    @Column(name="cp")
-    private String cp;
-
-    @Column(name = "estado")
     private String estado;
-
-    @Column(name = "municipio")
     private String municipio;
-
-    @Column(name = "localidad")
     private String localidad;
+    private String cp;
+    private String colonia;
 
-    /////////////////////////////////////
-
-    public String getCp() {
-        return cp;
-    }
-
-    public void setCp(String cp) {
-        this.cp = cp;
-    }//setCp
+    //////////////////////////
 
     public String getEstado() {
         return estado;
@@ -56,4 +34,19 @@ public class CodigoPostal {
         this.localidad = localidad;
     }//setLocalidad
 
-}//CodigoPostal
+    public String getCp() {
+        return cp;
+    }//getCp
+
+    public void setCp(String cp) {
+        this.cp = cp;
+    }//setCp
+
+    public String getColonia() {
+        return colonia;
+    }//getColonia
+
+    public void setColonia(String colonia) {
+        this.colonia = colonia;
+    }//setColonia
+}//ValidarDireccionRequestDTO

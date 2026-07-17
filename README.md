@@ -11,15 +11,17 @@ localidades, colonias y códigos postales proporcionado en `catalogos_mx.sql`.
 - Al capturar un código postal válido, se autoselecciona estado/municipio/
   localidad y se listan las colonias correspondientes.
 - Si el código postal no existe en el catálogo, se muestra un error.
-- Al hacer clic en "Continuar" se valida que los datos capturados sean
-  consistentes con el catálogo.
+- Al hacer clic en "Continuar" se valida en el servidor que los datos
+  capturados sean consistentes entre sí contra el catálogo (municipio
+  pertenece al estado, localidad pertenece al estado, el código postal
+  existe y coincide con el estado, la colonia pertenece al código postal).
 
 ## Stack
 
 - Java 17, Spring Boot 4.1.0 (Gradle)
 - PostgreSQL
-- Frontend: HTML/CSS/JS servido como recurso estático del mismo proyecto
-  (sin servidor separado)
+- Frontend: HTML/CSS/JS (Bootstrap + SweetAlert2) servido como recurso
+  estático del mismo proyecto (sin servidor separado)
 
 ## Requisitos previos
 
@@ -45,11 +47,11 @@ localidades, colonias y códigos postales proporcionado en `catalogos_mx.sql`.
    escritas en el código. Variables usadas (ver
    `src/main/resources/application.properties`):
 
-   | Variable      | Default si no se define              | Obligatoria |
-   |---------------|----------------------------------------|:-----------:|
-   | `DB_URL`      | `jdbc:postgresql://localhost:5432/catalogos_mx` | No |
-   | `DB_USER`     | `postgres`                              | No |
-   | `DB_PASSWORD` | *(sin default)*                         | **Sí** |
+   | Variable      | Default si no se define                          | Obligatoria |
+      |---------------|---------------------------------------------------|:-----------:|
+   | `DB_URL`      | `jdbc:postgresql://localhost:5432/catalogos_mx`    | No |
+   | `DB_USER`     | `postgres`                                         | No |
+   | `DB_PASSWORD` | *(sin default)*                                    | **Sí** |
 
    Antes de levantar la app, define al menos la contraseña:
 
@@ -65,6 +67,9 @@ localidades, colonias y códigos postales proporcionado en `catalogos_mx.sql`.
    ```powershell
    $env:DB_PASSWORD="tu_password"
    ```
+
+   En IntelliJ (Run/Debug Configurations → Modify options → Environment
+   variables): agregar `DB_PASSWORD=tu_password`.
 
 ## Despliegue / cómo correrlo
 
@@ -85,13 +90,16 @@ java -jar build/libs/nsmail-0.0.1-SNAPSHOT.jar
 
 ## Endpoints expuestos
 
-| Método | Ruta                                | Descripción                          |
-|--------|--------------------------------------|---------------------------------------|
-| GET    | `/api/estados`                       | Lista de estados                     |
-| GET    | `/api/estado/{estado}/municipios`    | Municipios de un estado              |
-| GET    | `/api/estado/{estado}/localidades`   | Localidades de un estado             |
-| GET    | `/api/cp/{cp}`                       | Datos del código postal              |
-| GET    | `/api/cp/{cp}/colonias`              | Colonias de un código postal         |
+Todos bajo el prefijo `/api/direccion`.
+
+| Método | Ruta                                          | Descripción                                  |
+|--------|-----------------------------------------------|-----------------------------------------------|
+| GET    | `/api/direccion/estados`                      | Lista de estados                              |
+| GET    | `/api/direccion/estado/{estado}/municipios`   | Municipios de un estado                       |
+| GET    | `/api/direccion/estado/{estado}/localidades`  | Localidades de un estado                      |
+| GET    | `/api/direccion/cp/{cp}`                      | Datos del código postal (estado, municipio, localidad, colonias). 404 si no existe |
+| GET    | `/api/direccion/cp/{cp}/colonias`             | Colonias de un código postal                  |
+| POST   | `/api/direccion/validar`                      | Valida consistencia de una dirección completa |
 
 ## Estructura relevante
 
@@ -101,11 +109,26 @@ nsmail/
 │   └── catalogos_mx.sql        # catálogo proporcionado para la prueba
 ├── src/main/java/com/prueba/nsmail/
 │   ├── controller/              # endpoints REST
-│   ├── model/                   # entidades JPA
-│   ├── repository/              # repositorios Spring Data
-│   └── service/                 # lógica de negocio
+│   ├── model/                   # entidades JPA (incluye llaves compuestas
+│   │                             #   para Municipio, Localidad y Colonia)
+│   ├── repository/               # repositorios Spring Data JPA
+│   ├── service/                  # lógica de negocio y validación
+│   └── dto/                      # objetos de transferencia de datos
 ├── src/main/resources/
 │   ├── application.properties
-│   └── static/                  # frontend (HTML/CSS/JS)
-└── build.gradle
+│   └── static/                   # frontend (HTML/CSS/JS)
+│       ├── index.html
+│       └── JS/
+│           └── script.js
+└── build.gradle.kts
 ```
+
+## Notas de diseño
+
+- Las tablas `municipio`, `localidad` y `colonia` usan llave primaria
+  compuesta (`clave` + `estado`, o `clave` + `cp`), reflejando que sus
+  claves no son únicas a nivel nacional en el catálogo oficial mexicano.
+  Se modelaron con `@EmbeddedId` y clases `@Embeddable` dedicadas.
+- La validación de consistencia de la dirección se realiza en el backend,
+  no solo en el frontend, ya que la interfaz (dropdowns) no es una garantía
+  de seguridad ante peticiones directas a la API.

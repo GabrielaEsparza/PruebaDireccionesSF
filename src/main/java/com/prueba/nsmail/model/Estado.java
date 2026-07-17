@@ -1,11 +1,13 @@
 package com.prueba.nsmail.model;
 
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
-
 @Table(name = "estado")
-
 public class Estado {
 
     @Id
@@ -15,19 +17,30 @@ public class Estado {
     @Column(name = "pais")
     private String pais;
 
-    @Column(name = "nombre_estado")
+    @Column (name = "nombre_estado")
     private String nombreEstado;
 
-        
-    public String getClave() {return clave;}
-    public void setClave(String clave){this.clave = clave;} 
+    public String getClave() {
+        return clave;
+    }//getClave
 
-    public String getPais(){return pais;}
-    public void setPais(String pais){this.pais = pais;}
+    public void setClave(String clave) {
+        this.clave = clave;
+    }//setClave
 
-    public String getNombreEstado(){return nombreEstado;}
-    public void setNombreEstado(String nombreEstado) {this.nombreEstado = nombreEstado;}
+    public String getPais() {
+        return pais;
+    }//getPais
 
+    public void setPais(String pais) {
+        this.pais = pais;
+    }//setPais
 
-}
+    public String getNombreEstado() {
+        return nombreEstado;
+    }//getNombreEstado
 
+    public void setNombreEstado(String nombreEstado) {
+        this.nombreEstado = nombreEstado;
+    }//setNombreEstado
+}//Estado
